@@ -34,11 +34,12 @@ Face stronger enemies → Require better tactics
 ### Graphics System
 **Rendering Approach:**
 - Modern OpenGL (3.3+ core profile for compatibility)
-- Instanced rendering for efficient voxel drawing
+- **Unified voxel rendering pipeline** for all solid objects (characters, items, environment)
+- Instanced rendering for efficient voxel drawing (thousands of voxels per frame)
+- Greedy meshing for static environment voxels (optimize GPU memory)
 - Deferred rendering for multiple light sources
-- Voxel-based character models (procedurally modifiable and destructible)
-- Particle systems for effects (hits, spells, loot drops)
-- Decal system for visual variety (burns, blood, magic circles)
+- Separate particle systems for non-solid effects (magic, fire, blood)
+- Decal system for surface details (burns, blood stains, magic circles)
 - Screen-space effects (bloom, motion blur for fast movement)
 
 **Voxel Architecture:**
@@ -56,11 +57,14 @@ Face stronger enemies → Require better tactics
 - Clear silhouettes and color coding for entity identification at small scale
 
 **Asset Strategy:**
+- **All solid objects are voxels** - unified rendering and asset pipeline
 - Base character: ~8-16 voxels (head, torso, 4 limbs, hands, feet)
+- Environment: voxel-based tiles, walls, props
+- Items/loot: voxel objects (weapons, armor, potions, gold)
 - Skeletal animation via transform hierarchy of named attachment points
 - Texture-less rendering (voxel colors + lighting only)
 - Heavy use of shaders for visual effects and voxel rendering optimization
-- Particle effects for "juice" (satisfaction feedback)
+- Particle effects for non-solid effects (magic, sparks, smoke, blood)
 - Greedy meshing or instancing for voxel rendering performance
 
 ### Core Systems
@@ -158,7 +162,15 @@ Face stronger enemies → Require better tactics
 
 ## Minimal Asset Requirements
 
-### Voxel Models (Mobs: Mobile Objects)
+**Design Philosophy: Everything solid is voxels**
+- Unified asset pipeline and rendering system
+- Consistent art style across all game objects
+- Single workflow for creating any game object
+- All objects can be procedurally modified, colored, and destroyed
+
+### Voxel Models
+
+#### Mobs (Mobile Objects)
 - **Player**: 8-16 voxel primitives forming humanoid
   - Named primitives: head, neck, torso, upper_arm_L/R, lower_arm_L/R, hand_L/R, upper_leg_L/R, lower_leg_L/R, foot_L/R
   - Attachment hierarchy: torso → limbs → extremities
@@ -168,29 +180,56 @@ Face stronger enemies → Require better tactics
   - Beast: 6-10 voxels (head, body, 4 legs, tail)
   - Flying: 4-6 voxels (body, wings, head)
   - Boss: 16-32 voxels (larger, more complex arrangements)
+
+#### Equipment (Attached Voxel Objects)
 - **Armor Pieces**: Voxel groups that replace/augment base primitives
-  - Helmet: replaces/overlays head primitive
-  - Chest: replaces/overlays torso primitive
-  - Gloves, boots: replace hand/foot primitives
-  - Each armor piece = 1-3 voxels with different colors
+  - Helmet: replaces/overlays head primitive (1-3 voxels)
+  - Chest: replaces/overlays torso primitive (2-4 voxels)
+  - Gloves, boots: replace hand/foot primitives (1-2 voxels each)
 - **Weapons**: Voxel primitives attached to hand attachment point
   - Sword: 2-4 voxels (blade, hilt, guard)
   - Staff: 3-5 voxels (shaft, ornament, base)
   - Bow: 3-4 voxels (limbs, grip, string as line)
-- **Environment**: Voxel-based or simple geometry
-  - Floor tiles: flat planes or single-voxel grid
-  - Walls: stacked voxels or simple boxes
-  - Props: 2-8 voxels (chests, barrels, rocks)
+  - Axe, mace, dagger: 2-5 voxels each
 
-### Effects
-- Particle textures: 2-3 simple shapes (circle, diamond, star)
-- Decals: Procedurally generated or simple patterns
-- UI elements: Geometric shapes with shaders
+#### Items (World Objects)
+- **Loot drops**: Small voxel objects on ground
+  - Health potion: 1-2 voxels (bottle shape, red)
+  - Mana potion: 1-2 voxels (bottle shape, blue)
+  - Gold: 1 voxel (yellow, sparkle shader)
+  - Weapons/Armor: Same models as equipment, lying on ground
+- **Interactables**:
+  - Chest: 4-8 voxels (box with lid)
+  - Lever: 2-3 voxels
+  - Door: 6-12 voxels (can animate open/close)
+
+#### Environment (Static Voxel Objects)
+- **Floor tiles**: Voxel grid (can be single layer or multi-layer for depth)
+  - Grass: green voxel layer with variation
+  - Stone: gray voxel tiles
+  - Lava: red/orange animated voxels
+- **Walls**: Stacked voxels forming barriers
+  - Simple wall: 1 voxel wide, 3-4 voxels tall
+  - Thick wall: 2-3 voxels wide
+- **Props**: Decorative voxel objects
+  - Tree: 5-10 voxels (trunk + canopy)
+  - Rock: 2-4 voxels (irregular arrangement)
+  - Barrel: 3-5 voxels (cylinder shape)
+  - Pillar: 4-8 voxels (vertical stack with details)
+
+### Effects (Non-Solid Objects)
+Particles are used for ephemeral effects, not solid objects:
+- **Particle systems**: For magic, fire, sparks, blood splatter, smoke
+- **Particle textures**: 2-3 simple shapes (circle, diamond, star)
+- **Decals**: Procedurally generated or simple patterns (scorch marks, blood stains)
+- **Projectiles**: Can be voxels (arrow) or particles (magic missile trail)
+- **UI elements**: Simple geometric shapes with shaders
 
 ### Textures
-- Minimal or none on models (use vertex colors + lighting)
+- **No textures on voxels** - use vertex colors + lighting only
 - Simple gradients for particles
 - UI icons can be procedural or basic shapes
+- All visual variety comes from: voxel arrangement, colors, shaders, lighting
 
 ## Key Features for Fast Gameplay
 
