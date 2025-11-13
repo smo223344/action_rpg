@@ -4,7 +4,9 @@
 A fast-paced action RPG similar to Diablo, built with OpenGL for cross-platform support (Windows, Mac, Linux). Focus on fluid gameplay, high frame rate, and minimal asset requirements.
 
 ## Core Design Principles
+- **Party-based tactical combat**: Control multiple characters, switch with Tab key
 - **Fast-paced combat**: Quick actions, short cooldowns, responsive controls
+- **Strategic depth**: Active character uses full abilities, allies act semi-autonomously
 - **High frame rate**: Target 144+ FPS, with smooth animations
 - **Minimal assets**: Simple 3D models with procedural/decal-based effects
 - **Mouse-driven**: Primary control with keyboard shortcuts for abilities/inventory
@@ -13,17 +15,26 @@ A fast-paced action RPG similar to Diablo, built with OpenGL for cross-platform 
 
 ### 1. Core Loop (per session)
 ```
-Player spawns → Explore area → Encounter enemies → Combat →
-Collect loot → Upgrade character → Repeat (increasing difficulty)
+Party spawns → Explore area → Encounter enemies → Tactical combat →
+Collect loot → Upgrade party members → Repeat (increasing difficulty)
 ```
 
 ### 2. Combat Loop (moment-to-moment)
 ```
-Spot enemy → Position/Dodge → Attack/Cast ability →
-Enemy reacts → Player reacts → Victory → Loot drops
+Spot enemies → Position party → Switch active character (Tab) →
+Use abilities/attacks → Allies auto-attack and dodge →
+Coordinate party abilities → Victory → Loot drops
 ```
 
-### 3. Progression Loop
+### 3. Party Management Loop
+```
+Active character: Full control (movement, all abilities, special actions) →
+Tab to switch → Previous character becomes semi-autonomous →
+Semi-autonomous allies: Basic attacks, dodge AOEs, follow/assist →
+Strategic switching based on situation
+```
+
+### 4. Progression Loop
 ```
 Gain XP → Level up → Unlock abilities → Find better gear →
 Face stronger enemies → Require better tactics
@@ -70,23 +81,54 @@ Face stronger enemies → Require better tactics
 ### Core Systems
 
 #### 1. Character System
-- Player stats: Health, Energy, Movement Speed, Attack Speed
-- Simple skill tree (5-7 active abilities)
+**Party Management:**
+- Party size: 2-4 characters
+- Tab key cycles through party members
+- Active character: Full player control (movement, all abilities, items)
+- Semi-autonomous allies: AI-controlled with limited behavior
+  - Follow active character or hold position
+  - Use basic attacks on nearby enemies
+  - Dodge telegraphed attacks and AOE zones
+  - Do NOT use powerful/limited abilities (cooldowns, ultimates)
+  - Do NOT use consumables or special actions
+- Visual indicator for active character (highlight, glow, UI marker)
+
+**Character Stats:**
+- Health, Energy, Movement Speed, Attack Speed
+- Simple skill tree (5-7 active abilities per character)
 - Passive modifiers from gear
 - Quick weapon switching (2-3 weapon sets)
 - Modular armor system (helmet, chest, gloves, boots - each replaces voxel primitives)
 - Visual damage feedback (voxels show damage, can be targeted by enemy attacks)
-- Procedural character variations (different voxel arrangements for enemy types)
+
+**Party Composition:**
+- Different character classes/roles (warrior, mage, archer, etc.)
+- Procedural character variations (different voxel arrangements for visual distinction)
+- Each character has unique abilities and playstyle
 
 #### 2. Combat System
+**Player Control (Active Character):**
 - Click-to-move pathfinding (A* or navmesh)
 - Click-to-attack targeting
 - Optional targeted attacks (aim at specific body parts/voxel primitives)
-- Area of effect abilities
+- Full access to all abilities (1-6 keys for skills)
+- Tactical positioning and ability combos
+
+**Semi-Autonomous Ally AI:**
+- Basic attack nearest enemy in range
+- Dodge visible AOE zones (red circles, telegraphed attacks)
+- Follow active character at medium distance
+- Maintain formation or spread out to avoid clustered AOE
+- Simple threat assessment (prioritize low-health enemies)
+- No cooldown ability usage, no consumables
+
+**Combat Mechanics:**
+- Area of effect abilities (affects both enemies and party positioning)
 - Damage types: Physical, Fire, Ice, Lightning
 - Dynamic damage visualization (damaged voxels change color, can be destroyed)
 - Destructible enemies (enough damage to a limb can disable/remove it)
-- Simple enemy AI (aggro, chase, attack patterns)
+- Enemy AI (aggro, chase, attack patterns, target priority)
+- Friendly fire consideration (optional difficulty modifier)
 
 #### 3. Loot System
 - Randomized item drops
@@ -100,6 +142,29 @@ Face stronger enemies → Require better tactics
 - Environmental hazards (fire, ice patches, traps)
 - Checkpoints/Waypoints for fast travel
 
+## Strategic Party Gameplay
+
+### Why Party-Based?
+- **Tactical depth**: Player must decide which character to control each moment
+- **Resource management**: Powerful abilities only usable when actively controlling that character
+- **Positioning matters**: Allies will dodge but not optimally position themselves
+- **Risk/reward**: Switching characters during combat has strategic implications
+- **Class synergy**: Different characters complement each other (tank, DPS, support)
+
+### Key Strategic Decisions
+1. **When to switch**: Balance controlling damage dealers vs. tanks vs. support
+2. **Ability timing**: Coordinate big abilities across party members
+3. **Positioning**: Active character controls formation and tactical positioning
+4. **Survival**: Switch to characters in danger to use defensive abilities
+5. **Boss fights**: Requires switching to use all party members' ultimate abilities
+
+### Semi-Autonomous AI Limitations (By Design)
+- **Forces switching**: Players must actively control characters for optimal play
+- **Basic survival**: Allies won't die easily but won't maximize damage either
+- **No waste**: Allies won't waste limited-use abilities or consumables
+- **Predictable**: Simple AI means player can anticipate ally behavior
+- **Strategic challenge**: Maximizing party effectiveness requires active management
+
 ## Development Phases
 
 ### Phase 1: Foundation (Weeks 1-2)
@@ -107,25 +172,31 @@ Face stronger enemies → Require better tactics
 - [ ] Basic camera system (isometric overhead view, wide battlefield)
 - [ ] Voxel renderer (instanced rendering or greedy meshing)
 - [ ] Simple voxel primitive system (create, position, color)
-- [ ] Input handling (mouse position, clicks, keyboard)
-- [ ] Basic player movement (click-to-move)
+- [ ] Input handling (mouse position, clicks, keyboard, Tab for switching)
+- [ ] Basic character movement (click-to-move)
+- [ ] Multiple character entities (party system foundation)
 
 ### Phase 2: Core Gameplay (Weeks 3-4)
 - [ ] Skeletal attachment system (named attachment points, transform hierarchy)
-- [ ] Player voxel model (8-16 primitives with attachment hierarchy)
+- [ ] Character voxel models (8-16 primitives with attachment hierarchy)
 - [ ] Basic animation system (rotate/translate primitives at attachment points)
+- [ ] Party switching system (Tab key cycles active character)
+- [ ] Active character control (movement, attacks)
+- [ ] Semi-autonomous ally AI (follow, basic attack, dodge)
 - [ ] Combat system (basic melee attack with hit detection)
 - [ ] Enemy AI (one enemy type with voxel model)
 - [ ] Health/damage system with visual voxel damage
-- [ ] Simple UI (health bar, XP bar)
+- [ ] Party UI (health bars for all party members, active indicator)
 
 ### Phase 3: Polish & Systems (Weeks 5-6)
 - [ ] Particle effects system
-- [ ] Multiple abilities (3-4 skills)
+- [ ] Multiple abilities per character (3-4 skills each)
+- [ ] Improved ally AI (AOE dodge, better positioning)
+- [ ] Different character classes (warrior, mage, archer)
 - [ ] Modular armor system (interchangeable voxel primitives)
-- [ ] Loot drops and inventory
+- [ ] Loot drops and inventory (shared party inventory)
 - [ ] Enemy variety (3-4 types with procedural voxel variations)
-- [ ] Level progression/XP system
+- [ ] Level progression/XP system (shared party XP)
 
 ### Phase 4: Content & Effects (Weeks 7-8)
 - [ ] Advanced voxel destruction system (targetable body parts)
@@ -234,19 +305,25 @@ Particles are used for ephemeral effects, not solid objects:
 ## Key Features for Fast Gameplay
 
 1. **Instant feedback**: Hit effects, screen shake, particles
-2. **Smooth movement**: Interpolated position updates
-3. **Responsive controls**: No input lag, immediate reactions
-4. **Clear visuals**: Enemy telegraphing, danger zones visible
+2. **Smooth movement**: Interpolated position updates for all party members
+3. **Responsive controls**: No input lag, immediate reactions, instant Tab switching
+4. **Clear visuals**: Enemy telegraphing, danger zones visible, active character clearly marked
 5. **Satisfying combat**: Impact sounds, visual effects, knockback
 6. **Fast progression**: Quick level-ups, frequent loot drops
+7. **Strategic party switching**: Seamless Tab cycling between characters mid-combat
+8. **Tactical depth**: Balance controlling multiple characters with fast-paced action
+9. **Smart ally AI**: Semi-autonomous allies handle basics, freeing player to focus on tactics
 
 ## Success Metrics
 - Maintain 144 FPS on mid-range GPU (GTX 1060 / RX 580 equivalent)
-- Render 50+ voxel-based mobs simultaneously without frame drops
+- Render 50+ voxel-based mobs simultaneously (party + enemies) without frame drops
+- Character switching latency < 16ms (instant Tab response)
 - Player movement latency < 16ms
-- Visual clarity maintained during intense combat (30+ enemies visible on screen)
+- Visual clarity maintained during intense combat (party + 30+ enemies visible on screen)
 - Voxel destruction/modification with no noticeable performance impact
-- Asset creation time: < 15 minutes per enemy type (define voxel arrangement + colors)
+- Semi-autonomous AI updates at 60Hz without impacting frame rate
+- Asset creation time: < 15 minutes per character class (define voxel arrangement + colors)
+- Asset creation time: < 10 minutes per enemy type
 - Procedural armor generation: < 5 minutes per piece
 - Build time: < 2 minutes for full compilation
 
