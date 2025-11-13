@@ -27,6 +27,8 @@ set(SOURCES
     src/game.cpp
     src/entity.cpp
     src/input.cpp
+    src/voxel_model.cpp
+    src/voxel_shader.cpp
     ${GLAD_DIR}/src/glad.c
 )
 
@@ -35,6 +37,8 @@ set(HEADERS
     include/game.h
     include/entity.h
     include/input.h
+    include/voxel_model.h
+    include/voxel_shader.h
 )
 
 # Executable
