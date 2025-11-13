@@ -17,6 +17,9 @@ find_package(OpenGL REQUIRED)
 # GLM - header-only library
 find_package(glm QUIET)
 
+# OpenAL for audio
+find_package(OpenAL REQUIRED)
+
 # GLAD (we'll include this as source)
 set(GLAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glad)
 
@@ -27,6 +30,7 @@ set(SOURCES
     src/game.cpp
     src/entity.cpp
     src/input.cpp
+    src/audio_manager.cpp
     ${GLAD_DIR}/src/glad.c
 )
 
@@ -35,6 +39,7 @@ set(HEADERS
     include/game.h
     include/entity.h
     include/input.h
+    include/audio_manager.h
 )
 
 # Executable
@@ -50,6 +55,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
     OpenGL::GL
+    OpenAL::OpenAL
     ${CMAKE_DL_LIBS}
 )
 
