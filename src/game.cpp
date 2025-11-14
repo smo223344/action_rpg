@@ -129,8 +129,14 @@ void Game::render() {
 
 void Game::updateProjectionMatrix() {
     // Calculate aspect ratio from actual window dimensions
-    float aspectRatio = static_cast<float>(renderer->getWindowWidth()) /
-                        static_cast<float>(renderer->getWindowHeight());
+    int width = renderer->getWindowWidth();
+    int height = renderer->getWindowHeight();
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+
+    std::cout << "Updating projection matrix - Width: " << width
+              << ", Height: " << height
+              << ", Aspect: " << aspectRatio << std::endl;
+
     projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
     renderer->setProjectionMatrix(projectionMatrix);
 }
