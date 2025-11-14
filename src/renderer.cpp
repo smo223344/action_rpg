@@ -88,6 +88,15 @@ bool Renderer::initialize(int width, int height, const char* title) {
     // Set viewport
     glViewport(0, 0, width, height);
 
+    // Set up framebuffer resize callback
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int w, int h) {
+        auto* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(win));
+        if (renderer) {
+            renderer->onFramebufferResize(w, h);
+        }
+    });
+
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);
 
@@ -267,4 +276,11 @@ void Renderer::renderEntities(const EntityManager& entityManager) {
 
 bool Renderer::shouldClose() const {
     return glfwWindowShouldClose(window);
+}
+
+void Renderer::onFramebufferResize(int width, int height) {
+    windowWidth = width;
+    windowHeight = height;
+    glViewport(0, 0, width, height);
+    std::cout << "Framebuffer resized to: " << width << "x" << height << std::endl;
 }

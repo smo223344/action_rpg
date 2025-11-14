@@ -25,9 +25,13 @@ public:
 
     bool shouldClose() const;
     GLFWwindow* getWindow() const { return window; }
+    int getWindowWidth() const { return windowWidth; }
+    int getWindowHeight() const { return windowHeight; }
 
     void setViewMatrix(const glm::mat4& view) { viewMatrix = view; }
     void setProjectionMatrix(const glm::mat4& projection) { projectionMatrix = projection; }
+
+    void onFramebufferResize(int width, int height);
 
 private:
     GLFWwindow* window;
