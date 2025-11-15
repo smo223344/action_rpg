@@ -7,6 +7,7 @@ Game::Game()
     , lastFrameTime(0.0)
     , lastWindowWidth(0)
     , lastWindowHeight(0)
+    , activePlayerIndex(0)
 {
 }
 
@@ -28,11 +29,30 @@ bool Game::initialize() {
     // Create entity manager
     entityManager = std::make_unique<EntityManager>();
 
-    // Create player entity
-    player = std::make_shared<PlayerEntity>();
-    player->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    player->color = glm::vec3(0.2f, 0.8f, 0.3f); // Green
-    entityManager->addEntity(player);
+    // Create party with 3 player characters
+    // Character 1 - Red
+    auto player1 = std::make_shared<PlayerEntity>();
+    player1->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    player1->color = glm::vec3(0.9f, 0.2f, 0.2f); // Red
+    party.push_back(player1);
+    entityManager->addEntity(player1);
+
+    // Character 2 - Green
+    auto player2 = std::make_shared<PlayerEntity>();
+    player2->position = glm::vec3(2.0f, 0.0f, 0.0f);
+    player2->color = glm::vec3(0.2f, 0.9f, 0.2f); // Green
+    party.push_back(player2);
+    entityManager->addEntity(player2);
+
+    // Character 3 - Blue
+    auto player3 = std::make_shared<PlayerEntity>();
+    player3->position = glm::vec3(-2.0f, 0.0f, 0.0f);
+    player3->color = glm::vec3(0.2f, 0.2f, 0.9f); // Blue
+    party.push_back(player3);
+    entityManager->addEntity(player3);
+
+    // Start with the first character active
+    activePlayerIndex = 0;
 
     // Setup camera (isometric-style overhead view)
     cameraPosition = glm::vec3(0.0f, 15.0f, 15.0f);
@@ -50,7 +70,10 @@ bool Game::initialize() {
     running = true;
 
     std::cout << "Game initialized successfully" << std::endl;
-    std::cout << "Right-click and hold to move the player" << std::endl;
+    std::cout << "Party size: " << party.size() << " characters" << std::endl;
+    std::cout << "Controls:" << std::endl;
+    std::cout << "  Right-click and hold to move the active character" << std::endl;
+    std::cout << "  Tab to switch between party members" << std::endl;
 
     return true;
 }
@@ -80,21 +103,30 @@ void Game::shutdown() {
 void Game::handleInput() {
     inputManager->update();
 
+    // Tab key to switch between party members
+    if (inputManager->isTabPressed()) {
+        activePlayerIndex = (activePlayerIndex + 1) % party.size();
+        std::cout << "Switched to character " << (activePlayerIndex + 1) << " / " << party.size() << std::endl;
+    }
+
+    // Get the active player
+    auto activePlayer = party[activePlayerIndex];
+
     // Right mouse button hold to move
     if (inputManager->isRightMouseButtonDown()) {
         glm::vec2 mousePos = inputManager->getMousePosition();
         glm::vec3 worldPos = inputManager->screenToWorld(mousePos, viewMatrix, projectionMatrix);
 
-        // Move player to cursor position
-        if (player) {
-            player->moveTo(worldPos);
+        // Move active player to cursor position
+        if (activePlayer) {
+            activePlayer->moveTo(worldPos);
         }
     }
 
     // Stop moving when right mouse button is released
     if (inputManager->isRightMouseButtonReleased()) {
-        if (player) {
-            player->stop();
+        if (activePlayer) {
+            activePlayer->stop();
         }
     }
 }
@@ -113,10 +145,11 @@ void Game::update(float deltaTime) {
     // Update all entities
     entityManager->updateAll(deltaTime);
 
-    // Update camera to follow player
-    if (player) {
-        cameraTarget = player->position;
-        cameraPosition = player->position + glm::vec3(0.0f, 15.0f, 15.0f);
+    // Update camera to follow active player
+    if (!party.empty() && activePlayerIndex < party.size()) {
+        auto activePlayer = party[activePlayerIndex];
+        cameraTarget = activePlayer->position;
+        cameraPosition = activePlayer->position + glm::vec3(0.0f, 15.0f, 15.0f);
         viewMatrix = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
         renderer->setViewMatrix(viewMatrix);
     }

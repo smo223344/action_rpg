@@ -4,6 +4,7 @@
 #include "entity.h"
 #include "input.h"
 #include <memory>
+#include <vector>
 
 class Game {
 public:
@@ -23,7 +24,11 @@ private:
     std::unique_ptr<InputManager> inputManager;
     std::unique_ptr<EntityManager> entityManager;
 
-    std::shared_ptr<PlayerEntity> player;
+    // Party system
+    static constexpr size_t MIN_PARTY_SIZE = 1;
+    static constexpr size_t MAX_PARTY_SIZE = 10;
+    std::vector<std::shared_ptr<PlayerEntity>> party;
+    size_t activePlayerIndex;
 
     // Camera
     glm::vec3 cameraPosition;
