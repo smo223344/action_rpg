@@ -36,6 +36,17 @@ private:
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
 
+    // Camera transition system
+    bool cameraTransitioning;
+    float transitionTimer;
+    static constexpr float CAMERA_TRANSITION_DURATION = 1.0f; // seconds
+    glm::vec3 cameraVelocity;
+    glm::vec3 cameraAcceleration;
+    size_t transitionTargetIndex;
+
+    void startCameraTransition(size_t targetIndex);
+    void updateCameraTransition(float deltaTime);
+
     // Timing
     double lastFrameTime;
 

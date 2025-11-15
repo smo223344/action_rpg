@@ -8,6 +8,11 @@ Game::Game()
     , lastWindowWidth(0)
     , lastWindowHeight(0)
     , activePlayerIndex(0)
+    , cameraTransitioning(false)
+    , transitionTimer(0.0f)
+    , cameraVelocity(0.0f)
+    , cameraAcceleration(0.0f)
+    , transitionTargetIndex(0)
 {
 }
 
@@ -105,7 +110,9 @@ void Game::handleInput() {
 
     // Tab key to switch between party members
     if (inputManager->isTabPressed()) {
-        activePlayerIndex = (activePlayerIndex + 1) % party.size();
+        size_t newIndex = (activePlayerIndex + 1) % party.size();
+        startCameraTransition(newIndex);
+        activePlayerIndex = newIndex;
         std::cout << "Switched to character " << (activePlayerIndex + 1) << " / " << party.size() << std::endl;
     }
 
@@ -145,11 +152,20 @@ void Game::update(float deltaTime) {
     // Update all entities
     entityManager->updateAll(deltaTime);
 
-    // Update camera to follow active player
+    // Update camera
+    if (cameraTransitioning) {
+        updateCameraTransition(deltaTime);
+    } else if (!party.empty() && activePlayerIndex < party.size()) {
+        // Normal following behavior when not transitioning
+        auto activePlayer = party[activePlayerIndex];
+        cameraPosition = activePlayer->position + glm::vec3(0.0f, 15.0f, 15.0f);
+        cameraVelocity = glm::vec3(0.0f);
+    }
+
+    // Update view matrix (always points camera at active player)
     if (!party.empty() && activePlayerIndex < party.size()) {
         auto activePlayer = party[activePlayerIndex];
         cameraTarget = activePlayer->position;
-        cameraPosition = activePlayer->position + glm::vec3(0.0f, 15.0f, 15.0f);
         viewMatrix = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
         renderer->setViewMatrix(viewMatrix);
     }
@@ -179,4 +195,45 @@ void Game::updateProjectionMatrix() {
 
     projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
     renderer->setProjectionMatrix(projectionMatrix);
+}
+
+void Game::startCameraTransition(size_t targetIndex) {
+    if (targetIndex >= party.size()) {
+        return;
+    }
+
+    transitionTargetIndex = targetIndex;
+    transitionTimer = 0.0f;
+    cameraTransitioning = true;
+
+    std::cout << "Starting camera transition to character " << (targetIndex + 1) << std::endl;
+}
+
+void Game::updateCameraTransition(float deltaTime) {
+    transitionTimer += deltaTime;
+    float remainingTime = CAMERA_TRANSITION_DURATION - transitionTimer;
+
+    if (remainingTime <= 0.0f) {
+        // Transition complete
+        cameraTransitioning = false;
+        cameraVelocity = glm::vec3(0.0f);
+        cameraAcceleration = glm::vec3(0.0f);
+        std::cout << "Camera transition complete" << std::endl;
+    } else {
+        // Get target camera position (where we want to be)
+        auto targetPlayer = party[transitionTargetIndex];
+        glm::vec3 targetCameraPos = targetPlayer->position + glm::vec3(0.0f, 15.0f, 15.0f);
+
+        // Calculate acceleration needed to reach target in remaining time
+        // Physics: p(t) = p₀ + v₀*t + 0.5*a*t²
+        // We want: targetPos = currentPos + velocity*T + 0.5*accel*T²
+        // Solving for accel: a = 2*(targetPos - currentPos - velocity*T) / T²
+        //                      = 2*(targetPos - currentPos)/T² - 2*velocity/T
+        float T = remainingTime;
+        cameraAcceleration = 2.0f * (targetCameraPos - cameraPosition) / (T * T) - 2.0f * cameraVelocity / T;
+
+        // Update position and velocity using physics
+        cameraPosition += cameraVelocity * deltaTime + 0.5f * cameraAcceleration * deltaTime * deltaTime;
+        cameraVelocity += cameraAcceleration * deltaTime;
+    }
 }
