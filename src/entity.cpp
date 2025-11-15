@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <glm/gtc/constants.hpp>
 
-void PlayerEntity::update(float deltaTime) {
+void MobEntity::update(float deltaTime) {
     if (isMoving) {
         glm::vec3 direction = targetPosition - position;
         float distance = glm::length(direction);
@@ -24,12 +24,12 @@ void PlayerEntity::update(float deltaTime) {
     }
 }
 
-void PlayerEntity::moveTo(const glm::vec3& target) {
+void MobEntity::moveTo(const glm::vec3& target) {
     targetPosition = target;
     isMoving = true;
 }
 
-void PlayerEntity::stop() {
+void MobEntity::stop() {
     isMoving = false;
 }
 
