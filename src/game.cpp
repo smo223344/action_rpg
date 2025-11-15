@@ -211,17 +211,24 @@ void Game::updateCameraTransition(float deltaTime) {
     transitionTimer += deltaTime;
     float remainingTime = CAMERA_TRANSITION_DURATION - transitionTimer;
 
+    // Get target camera position (where we want to be)
+    auto targetPlayer = party[transitionTargetIndex];
+    glm::vec3 targetCameraPos = targetPlayer->position + glm::vec3(0.0f, 15.0f, 15.0f);
+
     if (remainingTime <= 0.0f) {
-        // Transition complete
+        // Transition complete - snap to exact target position to avoid overshoot
+        cameraPosition = targetCameraPos;
         cameraTransitioning = false;
         cameraVelocity = glm::vec3(0.0f);
         cameraAcceleration = glm::vec3(0.0f);
         std::cout << "Camera transition complete" << std::endl;
+    } else if (remainingTime < deltaTime * 1.5f) {
+        // Very close to end - use direct interpolation to avoid numerical instability
+        // This prevents overshoot when remainingTime is very small
+        cameraPosition = targetCameraPos;
+        cameraVelocity = glm::vec3(0.0f);
+        transitionTimer = CAMERA_TRANSITION_DURATION; // Force completion next frame
     } else {
-        // Get target camera position (where we want to be)
-        auto targetPlayer = party[transitionTargetIndex];
-        glm::vec3 targetCameraPos = targetPlayer->position + glm::vec3(0.0f, 15.0f, 15.0f);
-
         // Calculate acceleration needed to reach target in remaining time
         // Physics: p(t) = p₀ + v₀*t + 0.5*a*t²
         // We want: targetPos = currentPos + velocity*T + 0.5*accel*T²
