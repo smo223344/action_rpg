@@ -85,8 +85,23 @@ bool Renderer::initialize(int width, int height, const char* title) {
         return false;
     }
 
+    // Get actual framebuffer size (important for HiDPI/Retina displays)
+    int framebufferWidth, framebufferHeight;
+    glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+    windowWidth = framebufferWidth;
+    windowHeight = framebufferHeight;
+
     // Set viewport
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, framebufferWidth, framebufferHeight);
+
+    // Set up framebuffer resize callback
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int w, int h) {
+        auto* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(win));
+        if (renderer) {
+            renderer->onFramebufferResize(w, h);
+        }
+    });
 
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);
@@ -99,6 +114,7 @@ bool Renderer::initialize(int width, int height, const char* title) {
 
     std::cout << "Renderer initialized successfully" << std::endl;
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
+    std::cout << "Framebuffer size: " << windowWidth << "x" << windowHeight << std::endl;
 
     return true;
 }
@@ -267,4 +283,11 @@ void Renderer::renderEntities(const EntityManager& entityManager) {
 
 bool Renderer::shouldClose() const {
     return glfwWindowShouldClose(window);
+}
+
+void Renderer::onFramebufferResize(int width, int height) {
+    windowWidth = width;
+    windowHeight = height;
+    glViewport(0, 0, width, height);
+    std::cout << "Framebuffer resized to: " << width << "x" << height << std::endl;
 }

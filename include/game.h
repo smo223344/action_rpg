@@ -34,5 +34,11 @@ private:
     // Timing
     double lastFrameTime;
 
+    // Window size tracking for resize handling
+    int lastWindowWidth;
+    int lastWindowHeight;
+
     bool running;
+
+    void updateProjectionMatrix();
 };

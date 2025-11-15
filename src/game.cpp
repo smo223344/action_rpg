@@ -5,6 +5,8 @@
 Game::Game()
     : running(false)
     , lastFrameTime(0.0)
+    , lastWindowWidth(0)
+    , lastWindowHeight(0)
 {
 }
 
@@ -37,10 +39,12 @@ bool Game::initialize() {
     cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
 
     viewMatrix = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
-    projectionMatrix = glm::perspective(glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
-
     renderer->setViewMatrix(viewMatrix);
-    renderer->setProjectionMatrix(projectionMatrix);
+
+    // Initialize window size tracking and projection matrix
+    lastWindowWidth = renderer->getWindowWidth();
+    lastWindowHeight = renderer->getWindowHeight();
+    updateProjectionMatrix();
 
     lastFrameTime = glfwGetTime();
     running = true;
@@ -86,9 +90,26 @@ void Game::handleInput() {
             player->moveTo(worldPos);
         }
     }
+
+    // Stop moving when right mouse button is released
+    if (inputManager->isRightMouseButtonReleased()) {
+        if (player) {
+            player->stop();
+        }
+    }
 }
 
 void Game::update(float deltaTime) {
+    // Check for window resize and update projection matrix if needed
+    int currentWidth = renderer->getWindowWidth();
+    int currentHeight = renderer->getWindowHeight();
+    if (currentWidth != lastWindowWidth || currentHeight != lastWindowHeight) {
+        lastWindowWidth = currentWidth;
+        lastWindowHeight = currentHeight;
+        updateProjectionMatrix();
+        std::cout << "Window resized, updated projection matrix" << std::endl;
+    }
+
     // Update all entities
     entityManager->updateAll(deltaTime);
 
@@ -111,4 +132,18 @@ void Game::render() {
     renderer->renderEntities(*entityManager);
 
     renderer->endFrame();
+}
+
+void Game::updateProjectionMatrix() {
+    // Calculate aspect ratio from actual window dimensions
+    int width = renderer->getWindowWidth();
+    int height = renderer->getWindowHeight();
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+
+    std::cout << "Updating projection matrix - Width: " << width
+              << ", Height: " << height
+              << ", Aspect: " << aspectRatio << std::endl;
+
+    projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+    renderer->setProjectionMatrix(projectionMatrix);
 }

@@ -29,6 +29,10 @@ void PlayerEntity::moveTo(const glm::vec3& target) {
     isMoving = true;
 }
 
+void PlayerEntity::stop() {
+    isMoving = false;
+}
+
 void EntityManager::addEntity(std::shared_ptr<Entity> entity) {
     entities.push_back(entity);
 }
