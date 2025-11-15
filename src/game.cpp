@@ -8,6 +8,7 @@ Game::Game()
     , lastWindowWidth(0)
     , lastWindowHeight(0)
     , activePlayerIndex(0)
+    , cameraOffset(0.0f, 15.0f, 15.0f)
     , cameraTransitioning(false)
     , transitionTimer(0.0f)
     , cameraVelocity(0.0f)
@@ -60,7 +61,7 @@ bool Game::initialize() {
     activePlayerIndex = 0;
 
     // Setup camera (isometric-style overhead view)
-    cameraPosition = glm::vec3(0.0f, 15.0f, 15.0f);
+    cameraPosition = cameraOffset;
     cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
 
     viewMatrix = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -158,13 +159,13 @@ void Game::update(float deltaTime) {
     } else if (!party.empty() && activePlayerIndex < party.size()) {
         // Normal following behavior when not transitioning
         auto activePlayer = party[activePlayerIndex];
-        cameraPosition = activePlayer->position + glm::vec3(0.0f, 15.0f, 15.0f);
+        cameraPosition = activePlayer->position + cameraOffset;
         cameraVelocity = glm::vec3(0.0f);
     }
 
     // Update view matrix (maintain fixed isometric viewing angle)
     // Camera target is derived from camera position to prevent rotation during transitions
-    cameraTarget = cameraPosition - glm::vec3(0.0f, 15.0f, 15.0f);
+    cameraTarget = cameraPosition - cameraOffset;
     viewMatrix = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
     renderer->setViewMatrix(viewMatrix);
 }
@@ -213,7 +214,7 @@ void Game::updateCameraTransition(float deltaTime) {
 
     // Get target camera position (where we want to be)
     auto targetPlayer = party[transitionTargetIndex];
-    glm::vec3 targetCameraPos = targetPlayer->position + glm::vec3(0.0f, 15.0f, 15.0f);
+    glm::vec3 targetCameraPos = targetPlayer->position + cameraOffset;
 
     if (remainingTime <= 0.0f) {
         // Transition complete - snap to exact target position to avoid overshoot

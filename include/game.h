@@ -33,6 +33,7 @@ private:
     // Camera
     glm::vec3 cameraPosition;
     glm::vec3 cameraTarget;
+    glm::vec3 cameraOffset; // Offset from character position for isometric view
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
 
