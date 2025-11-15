@@ -40,7 +40,7 @@ private:
     // Camera transition system
     bool cameraTransitioning;
     float transitionTimer;
-    static constexpr float CAMERA_TRANSITION_DURATION = 1.0f; // seconds
+    static constexpr float CAMERA_TRANSITION_DURATION = 0.2f; // seconds
     glm::vec3 cameraVelocity;
     glm::vec3 cameraAcceleration;
     size_t transitionTargetIndex;

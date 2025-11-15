@@ -8,7 +8,7 @@ Game::Game()
     , lastWindowWidth(0)
     , lastWindowHeight(0)
     , activePlayerIndex(0)
-    , cameraOffset(0.0f, 15.0f, 15.0f)
+    , cameraOffset(0.0f, 20.0f, 7.0f)
     , cameraTransitioning(false)
     , transitionTimer(0.0f)
     , cameraVelocity(0.0f)
@@ -192,7 +192,7 @@ void Game::updateProjectionMatrix() {
               << ", Height: " << height
               << ", Aspect: " << aspectRatio << std::endl;
 
-    projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+    projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.01f, 100.0f);
     renderer->setProjectionMatrix(projectionMatrix);
 }
 
