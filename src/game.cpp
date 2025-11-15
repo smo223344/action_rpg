@@ -90,6 +90,13 @@ void Game::handleInput() {
             player->moveTo(worldPos);
         }
     }
+
+    // Stop moving when right mouse button is released
+    if (inputManager->isRightMouseButtonReleased()) {
+        if (player) {
+            player->stop();
+        }
+    }
 }
 
 void Game::update(float deltaTime) {

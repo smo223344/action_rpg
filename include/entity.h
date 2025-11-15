@@ -32,6 +32,7 @@ struct PlayerEntity : public Entity {
 
     void update(float deltaTime) override;
     void moveTo(const glm::vec3& target);
+    void stop();
 };
 
 // Entity manager to hold all renderable entities
