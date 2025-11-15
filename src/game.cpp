@@ -162,13 +162,11 @@ void Game::update(float deltaTime) {
         cameraVelocity = glm::vec3(0.0f);
     }
 
-    // Update view matrix (always points camera at active player)
-    if (!party.empty() && activePlayerIndex < party.size()) {
-        auto activePlayer = party[activePlayerIndex];
-        cameraTarget = activePlayer->position;
-        viewMatrix = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
-        renderer->setViewMatrix(viewMatrix);
-    }
+    // Update view matrix (maintain fixed isometric viewing angle)
+    // Camera target is derived from camera position to prevent rotation during transitions
+    cameraTarget = cameraPosition - glm::vec3(0.0f, 15.0f, 15.0f);
+    viewMatrix = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
+    renderer->setViewMatrix(viewMatrix);
 }
 
 void Game::render() {
