@@ -46,12 +46,21 @@ struct MobEntity : public Entity {
     glm::vec3 targetPosition{0.0f, 0.0f, 0.0f};
     bool isMoving{false};
 
+    // Pathfinding
+    float searchRadius{5.0f}; // Radius for finding intermediate waypoints
+    glm::vec3 waypoint{0.0f, 0.0f, 0.0f}; // Current pathfinding waypoint
+    bool hasWaypoint{false}; // Whether we have a valid waypoint
+
     // Reference to entity manager for collision detection
     EntityManager* entityManager{nullptr};
 
     void update(float deltaTime) override;
     void moveTo(const glm::vec3& target);
     void stop();
+
+    // Pathfinding helpers
+    bool isPointBlocked(const glm::vec3& point, float minClearance) const;
+    glm::vec3 findIntermediateWaypoint(const glm::vec3& target);
 };
 
 // Player-controlled entity
