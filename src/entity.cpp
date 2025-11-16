@@ -32,21 +32,27 @@ void MobEntity::update(float deltaTime) {
                     auto otherMob = std::dynamic_pointer_cast<MobEntity>(other);
                     if (!otherMob || !otherMob->active) continue;
 
-                    // Calculate distance between centers at desired position
-                    glm::vec3 toOther = otherMob->position - desiredPosition;
-                    float centerDistance = glm::length(toOther);
                     float minDistance = radius + otherMob->radius;
 
-                    // If collision would occur, clamp position
-                    if (centerDistance < minDistance) {
-                        // Find the point along the movement path where circles just touch
-                        // Move as close as possible without overlapping
-                        if (centerDistance > 0.001f) {
-                            glm::vec3 toOtherNorm = toOther / centerDistance;
-                            // Position this entity just outside the other's radius
-                            finalPosition = otherMob->position - toOtherNorm * minDistance;
+                    // Calculate current distance
+                    glm::vec3 currentToOther = otherMob->position - position;
+                    float currentDistance = glm::length(currentToOther);
+
+                    // Calculate desired distance
+                    glm::vec3 toOther = otherMob->position - desiredPosition;
+                    float desiredDistance = glm::length(toOther);
+
+                    // Only block movement if:
+                    // 1. Desired position would overlap (desiredDistance < minDistance)
+                    // 2. AND we're not moving away (desiredDistance <= currentDistance)
+                    if (desiredDistance < minDistance && desiredDistance <= currentDistance) {
+                        // Find the point where circles just touch
+                        if (currentDistance > 0.001f) {
+                            // Move along the line between centers to just touching
+                            glm::vec3 currentToOtherNorm = currentToOther / currentDistance;
+                            finalPosition = otherMob->position - currentToOtherNorm * minDistance;
                         } else {
-                            // If centers are exactly on top of each other, push away in movement direction
+                            // Centers are on top of each other, push away in movement direction
                             finalPosition = otherMob->position - direction * minDistance;
                         }
                         isMoving = false; // Stop moving since we hit an obstacle
