@@ -1,5 +1,6 @@
 #include "entity.h"
 #include <algorithm>
+#include <limits>
 #include <glm/gtc/constants.hpp>
 
 void MobEntity::update(float deltaTime) {
@@ -31,6 +32,33 @@ void MobEntity::moveTo(const glm::vec3& target) {
 
 void MobEntity::stop() {
     isMoving = false;
+}
+
+void BasicShooterEnemy::update(float deltaTime) {
+    // AI: Follow the closest player character
+    if (party && !party->empty()) {
+        // Find the closest PC
+        std::shared_ptr<PlayerEntity> closestPC = nullptr;
+        float closestDistance = std::numeric_limits<float>::max();
+
+        for (const auto& pc : *party) {
+            if (pc && pc->active) {
+                float distance = glm::length(pc->position - position);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestPC = pc;
+                }
+            }
+        }
+
+        // Move towards the closest PC
+        if (closestPC) {
+            moveTo(closestPC->position);
+        }
+    }
+
+    // Call parent update to handle movement
+    MobEntity::update(deltaTime);
 }
 
 void EntityManager::addEntity(std::shared_ptr<Entity> entity) {

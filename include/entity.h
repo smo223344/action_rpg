@@ -53,6 +53,23 @@ struct PlayerEntity : public MobEntity {
     ~PlayerEntity() override = default;
 };
 
+// Base enemy entity
+struct EnemyEntity : public MobEntity {
+    EnemyEntity() = default;
+    ~EnemyEntity() override = default;
+};
+
+// Basic shooter enemy that follows the closest PC
+struct BasicShooterEnemy : public EnemyEntity {
+    BasicShooterEnemy() = default;
+    ~BasicShooterEnemy() override = default;
+
+    void update(float deltaTime) override;
+
+    // Reference to party for AI targeting
+    const std::vector<std::shared_ptr<PlayerEntity>>* party{nullptr};
+};
+
 // Entity manager to hold all renderable entities
 class EntityManager {
 public:
