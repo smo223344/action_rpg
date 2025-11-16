@@ -7,6 +7,9 @@ InputManager::InputManager(GLFWwindow* window)
     , rightMousePressed(false)
     , rightMouseReleased(false)
     , prevRightMouseDown(false)
+    , tabDown(false)
+    , tabPressed(false)
+    , prevTabDown(false)
     , mousePosition(0.0f)
     , prevMousePosition(0.0f)
     , mouseDelta(0.0f)
@@ -16,6 +19,7 @@ InputManager::InputManager(GLFWwindow* window)
 void InputManager::update() {
     // Store previous states
     prevRightMouseDown = rightMouseDown;
+    prevTabDown = tabDown;
     prevMousePosition = mousePosition;
 
     // Get current mouse button state
@@ -24,6 +28,10 @@ void InputManager::update() {
     // Calculate pressed/released states
     rightMousePressed = rightMouseDown && !prevRightMouseDown;
     rightMouseReleased = !rightMouseDown && prevRightMouseDown;
+
+    // Get current Tab key state
+    tabDown = glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS;
+    tabPressed = tabDown && !prevTabDown;
 
     // Get mouse position
     double xpos, ypos;

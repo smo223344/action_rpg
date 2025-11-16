@@ -4,6 +4,15 @@
 #include <vector>
 #include <memory>
 
+enum class EntityState {
+    Idle,
+    Moving,
+    Attacking,
+    Casting,
+    Drinking,
+    Dead
+};
+
 // Base renderable entity
 struct Entity {
     glm::vec3 position{0.0f, 0.0f, 0.0f};
@@ -12,12 +21,15 @@ struct Entity {
     glm::vec3 color{1.0f, 1.0f, 1.0f};
     bool active{true};
 
+    double stateTimeRemaining{0.0};
+    EntityState actionState{EntityState::Idle};
+
     virtual ~Entity() = default;
     virtual void update(float deltaTime) {}
 };
 
-// Player entity with stats (placeholders for now)
-struct PlayerEntity : public Entity {
+// MOB entity with stats (placeholders for now)
+struct MobEntity : public Entity {
     // Stats
     float health{100.0f};
     float maxHealth{100.0f};
@@ -33,6 +45,12 @@ struct PlayerEntity : public Entity {
     void update(float deltaTime) override;
     void moveTo(const glm::vec3& target);
     void stop();
+};
+
+// Player-controlled entity
+struct PlayerEntity : public MobEntity {
+    PlayerEntity() = default;
+    ~PlayerEntity() override = default;
 };
 
 // Entity manager to hold all renderable entities

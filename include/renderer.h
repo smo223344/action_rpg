@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-class Entity;
+struct Entity;
 class EntityManager;
 
 class Renderer {
