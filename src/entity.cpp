@@ -12,12 +12,50 @@ void MobEntity::update(float deltaTime) {
             direction = glm::normalize(direction);
             float moveDistance = movementSpeed * deltaTime;
 
+            glm::vec3 desiredPosition;
             if (moveDistance >= distance) {
-                position = targetPosition;
+                desiredPosition = targetPosition;
                 isMoving = false;
             } else {
-                position += direction * moveDistance;
+                desiredPosition = position + direction * moveDistance;
             }
+
+            // Check for collisions with other MOBs
+            glm::vec3 finalPosition = desiredPosition;
+            if (entityManager) {
+                const auto& entities = entityManager->getEntities();
+                for (const auto& other : entities) {
+                    // Skip self
+                    if (other.get() == this) continue;
+
+                    // Only check collision with other MobEntities
+                    auto otherMob = std::dynamic_pointer_cast<MobEntity>(other);
+                    if (!otherMob || !otherMob->active) continue;
+
+                    // Calculate distance between centers at desired position
+                    glm::vec3 toOther = otherMob->position - desiredPosition;
+                    float centerDistance = glm::length(toOther);
+                    float minDistance = radius + otherMob->radius;
+
+                    // If collision would occur, clamp position
+                    if (centerDistance < minDistance) {
+                        // Find the point along the movement path where circles just touch
+                        // Move as close as possible without overlapping
+                        if (centerDistance > 0.001f) {
+                            glm::vec3 toOtherNorm = toOther / centerDistance;
+                            // Position this entity just outside the other's radius
+                            finalPosition = otherMob->position - toOtherNorm * minDistance;
+                        } else {
+                            // If centers are exactly on top of each other, push away in movement direction
+                            finalPosition = otherMob->position - direction * minDistance;
+                        }
+                        isMoving = false; // Stop moving since we hit an obstacle
+                        break; // Only handle first collision
+                    }
+                }
+            }
+
+            position = finalPosition;
         } else {
             position = targetPosition;
             isMoving = false;
@@ -63,6 +101,11 @@ void BasicShooterEnemy::update(float deltaTime) {
 
 void EntityManager::addEntity(std::shared_ptr<Entity> entity) {
     entities.push_back(entity);
+
+    // Set entity manager reference for MobEntity types (for collision detection)
+    if (auto mob = std::dynamic_pointer_cast<MobEntity>(entity)) {
+        mob->entityManager = this;
+    }
 }
 
 void EntityManager::removeEntity(std::shared_ptr<Entity> entity) {

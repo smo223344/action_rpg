@@ -28,6 +28,9 @@ struct Entity {
     virtual void update(float deltaTime) {}
 };
 
+// Forward declaration
+class EntityManager;
+
 // MOB entity with stats (placeholders for now)
 struct MobEntity : public Entity {
     // Stats
@@ -37,10 +40,14 @@ struct MobEntity : public Entity {
     float maxEnergy{100.0f};
     float movementSpeed{5.0f};
     float attackSpeed{1.0f};
+    float radius{0.5f}; // Collision radius
 
     // Movement
     glm::vec3 targetPosition{0.0f, 0.0f, 0.0f};
     bool isMoving{false};
+
+    // Reference to entity manager for collision detection
+    EntityManager* entityManager{nullptr};
 
     void update(float deltaTime) override;
     void moveTo(const glm::vec3& target);
