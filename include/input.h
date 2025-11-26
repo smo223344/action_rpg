@@ -14,6 +14,7 @@ public:
     bool isRightMouseButtonReleased() const { return rightMouseReleased; }
 
     bool isTabPressed() const { return tabPressed; }
+    bool isQPressed() const { return qPressed; }
 
     glm::vec2 getMousePosition() const { return mousePosition; }
     glm::vec2 getMouseDelta() const { return mouseDelta; }
@@ -32,6 +33,10 @@ private:
     bool tabDown;
     bool tabPressed;
     bool prevTabDown;
+
+    bool qDown;
+    bool qPressed;
+    bool prevQDown;
 
     glm::vec2 mousePosition;
     glm::vec2 prevMousePosition;

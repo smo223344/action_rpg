@@ -1,6 +1,7 @@
 #include "game.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <random>
 
 Game::Game()
     : running(false)
@@ -80,6 +81,7 @@ bool Game::initialize() {
     std::cout << "Controls:" << std::endl;
     std::cout << "  Right-click and hold to move the active character" << std::endl;
     std::cout << "  Tab to switch between party members" << std::endl;
+    std::cout << "  Q to spawn a BasicShooterEnemy at a random position" << std::endl;
 
     return true;
 }
@@ -115,6 +117,25 @@ void Game::handleInput() {
         startCameraTransition(newIndex);
         activePlayerIndex = newIndex;
         std::cout << "Switched to character " << (activePlayerIndex + 1) << " / " << party.size() << std::endl;
+    }
+
+    // Q key to spawn a BasicShooterEnemy at a random position
+    if (inputManager->isQPressed()) {
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        static std::uniform_real_distribution<float> dis(-15.0f, 15.0f);
+
+        auto enemy = std::make_shared<BasicShooterEnemy>();
+        enemy->position = glm::vec3(dis(gen), 0.0f, dis(gen));
+        enemy->color = glm::vec3(0.9f, 0.5f, 0.1f); // Orange color for enemies
+        enemy->party = &party; // Set party reference for AI
+        enemy->movementSpeed = 3.0f; // Slower than default player speed
+
+        entityManager->addEntity(enemy);
+
+        std::cout << "Spawned BasicShooterEnemy at position ("
+                  << enemy->position.x << ", " << enemy->position.y << ", " << enemy->position.z << ")"
+                  << std::endl;
     }
 
     // Get the active player
