@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <limits>
 #include <glm/gtc/constants.hpp>
+#include <glm/common.hpp>
 
 void MobEntity::update(float deltaTime) {
     if (isMoving) {
@@ -20,53 +21,23 @@ void MobEntity::update(float deltaTime) {
                 desiredPosition = position + direction * moveDistance;
             }
 
-            // Check for collisions with other MOBs
-            glm::vec3 finalPosition = desiredPosition;
-            if (entityManager) {
-                const auto& entities = entityManager->getEntities();
-                for (const auto& other : entities) {
-                    // Skip self
-                    if (other.get() == this) continue;
-
-                    // Only check collision with other MobEntities
-                    auto otherMob = std::dynamic_pointer_cast<MobEntity>(other);
-                    if (!otherMob || !otherMob->active) continue;
-
-                    float minDistance = radius + otherMob->radius;
-
-                    // Calculate current distance
-                    glm::vec3 currentToOther = otherMob->position - position;
-                    float currentDistance = glm::length(currentToOther);
-
-                    // Calculate desired distance
-                    glm::vec3 toOther = otherMob->position - desiredPosition;
-                    float desiredDistance = glm::length(toOther);
-
-                    // Only block movement if:
-                    // 1. Desired position would overlap (desiredDistance < minDistance)
-                    // 2. AND we're not moving away (desiredDistance <= currentDistance)
-                    if (desiredDistance < minDistance && desiredDistance <= currentDistance) {
-                        // Find the point where circles just touch
-                        if (currentDistance > 0.001f) {
-                            // Move along the line between centers to just touching
-                            glm::vec3 currentToOtherNorm = currentToOther / currentDistance;
-                            finalPosition = otherMob->position - currentToOtherNorm * minDistance;
-                        } else {
-                            // Centers are on top of each other, push away in movement direction
-                            finalPosition = otherMob->position - direction * minDistance;
-                        }
-                        isMoving = false; // Stop moving since we hit an obstacle
-                        break; // Only handle first collision
-                    }
-                }
-            }
-
+            // Apply collision resolution with sliding
+            glm::vec3 finalPosition = resolveCollisions(desiredPosition, deltaTime);
             position = finalPosition;
+
+            // Check if we've reached close enough to target after collision resolution
+            if (glm::length(targetPosition - position) < 0.1f) {
+                position = targetPosition;
+                isMoving = false;
+            }
         } else {
             position = targetPosition;
             isMoving = false;
         }
     }
+
+    // Apply continuous separation forces even when not explicitly moving
+    applySeparationForces(deltaTime);
 }
 
 void MobEntity::moveTo(const glm::vec3& target) {
@@ -76,6 +47,97 @@ void MobEntity::moveTo(const glm::vec3& target) {
 
 void MobEntity::stop() {
     isMoving = false;
+}
+
+glm::vec3 MobEntity::resolveCollisions(const glm::vec3& desiredPosition, float deltaTime) {
+    if (!entityManager) return desiredPosition;
+
+    glm::vec3 movement = desiredPosition - position;
+    glm::vec3 finalPosition = desiredPosition;
+
+    // Collect all overlapping entities
+    std::vector<std::pair<MobEntity*, float>> collisions;
+    const auto& entities = entityManager->getEntities();
+
+    for (const auto& other : entities) {
+        if (other.get() == this) continue;
+
+        auto otherMob = std::dynamic_pointer_cast<MobEntity>(other);
+        if (!otherMob || !otherMob->active) continue;
+
+        glm::vec3 toOther = otherMob->position - desiredPosition;
+        float distance = glm::length(toOther);
+        float minDistance = radius + otherMob->radius;
+
+        if (distance < minDistance) {
+            collisions.push_back({otherMob.get(), distance});
+        }
+    }
+
+    // Process collisions with sliding
+    for (const auto& [otherMob, distance] : collisions) {
+        glm::vec3 toOther = otherMob->position - finalPosition;
+        float currentDist = glm::length(toOther);
+        float minDistance = radius + otherMob->radius;
+
+        if (currentDist < minDistance && currentDist > 0.001f) {
+            // Calculate penetration depth
+            float penetration = minDistance - currentDist;
+            glm::vec3 separationDir = -glm::normalize(toOther);
+
+            // Instead of stopping, slide along the collision surface
+            // Project movement onto the plane tangent to collision
+            glm::vec3 collisionNormal = -toOther / currentDist;
+            glm::vec3 slideDirection = movement - collisionNormal * glm::dot(movement, collisionNormal);
+
+            // Apply sliding with some friction
+            float slideFactor = 0.7f; // Friction coefficient (0 = full stop, 1 = perfect slide)
+            finalPosition = position + slideDirection * slideFactor;
+
+            // Ensure we're not still penetrating after slide
+            glm::vec3 afterSlideToOther = otherMob->position - finalPosition;
+            float afterSlideDist = glm::length(afterSlideToOther);
+            if (afterSlideDist < minDistance && afterSlideDist > 0.001f) {
+                // Push out to minimum distance
+                finalPosition = otherMob->position - glm::normalize(afterSlideToOther) * minDistance;
+            }
+        }
+    }
+
+    return finalPosition;
+}
+
+void MobEntity::applySeparationForces(float deltaTime) {
+    if (!entityManager) return;
+
+    glm::vec3 separationForce(0.0f);
+    int nearbyCount = 0;
+
+    const auto& entities = entityManager->getEntities();
+    for (const auto& other : entities) {
+        if (other.get() == this) continue;
+
+        auto otherMob = std::dynamic_pointer_cast<MobEntity>(other);
+        if (!otherMob || !otherMob->active) continue;
+
+        glm::vec3 toOther = position - otherMob->position;
+        float distance = glm::length(toOther);
+        float preferredDistance = (radius + otherMob->radius) * 1.2f; // Add some buffer
+
+        // Apply gentle separation force when entities are too close
+        if (distance < preferredDistance && distance > 0.001f) {
+            float strength = (preferredDistance - distance) / preferredDistance;
+            separationForce += (toOther / distance) * strength;
+            nearbyCount++;
+        }
+    }
+
+    // Apply the averaged separation force
+    if (nearbyCount > 0) {
+        separationForce /= static_cast<float>(nearbyCount);
+        float separationSpeed = 2.0f; // Gentle push speed
+        position += separationForce * separationSpeed * deltaTime;
+    }
 }
 
 glm::vec3 MobEntity::calculateSteeringForce(const glm::vec3& targetPos, float avoidanceRadius) {
@@ -89,8 +151,12 @@ glm::vec3 MobEntity::calculateSteeringForce(const glm::vec3& targetPos, float av
     // Attraction toward target
     glm::vec3 seekForce = glm::normalize(desiredDirection);
 
-    // Repulsion from nearby obstacles
+    // Predictive avoidance - look ahead to where we'll be
+    glm::vec3 futurePos = position + seekForce * movementSpeed * 0.5f; // Look 0.5 seconds ahead
+
+    // Avoidance from nearby obstacles with perpendicular steering
     glm::vec3 avoidanceForce(0.0f);
+    bool needsAvoidance = false;
 
     if (entityManager) {
         const auto& entities = entityManager->getEntities();
@@ -100,21 +166,65 @@ glm::vec3 MobEntity::calculateSteeringForce(const glm::vec3& targetPos, float av
             auto otherMob = std::dynamic_pointer_cast<MobEntity>(other);
             if (!otherMob || !otherMob->active) continue;
 
-            glm::vec3 toOther = otherMob->position - position;
-            float distance = glm::length(toOther);
+            // Check both current and future positions
+            glm::vec3 toOtherFuture = otherMob->position - futurePos;
+            float futureDist = glm::length(toOtherFuture);
 
-            // Only avoid obstacles within avoidance radius
-            if (distance < avoidanceRadius && distance > 0.01f) {
-                // Repulsion strength increases as we get closer
-                float repulsionStrength = (avoidanceRadius - distance) / avoidanceRadius;
-                glm::vec3 awayFromOther = -glm::normalize(toOther);
-                avoidanceForce += awayFromOther * repulsionStrength;
+            glm::vec3 toOtherCurrent = otherMob->position - position;
+            float currentDist = glm::length(toOtherCurrent);
+
+            // Determine if we need to avoid this obstacle
+            float effectiveRadius = radius + otherMob->radius + 0.3f; // Add buffer
+
+            if (futureDist < effectiveRadius || currentDist < avoidanceRadius) {
+                needsAvoidance = true;
+
+                if (currentDist > 0.01f) {
+                    // Calculate perpendicular avoidance direction
+                    glm::vec3 toObstacle = glm::normalize(toOtherCurrent);
+
+                    // Get perpendicular direction (left or right based on relative positions)
+                    glm::vec3 perpendicular;
+                    glm::vec3 cross = glm::cross(toObstacle, glm::vec3(0, 1, 0));
+                    if (glm::length(cross) > 0.01f) {
+                        perpendicular = glm::normalize(cross);
+                    } else {
+                        // Fallback if obstacle is directly above/below
+                        perpendicular = glm::vec3(1, 0, 0);
+                    }
+
+                    // Choose direction based on which side has more room
+                    glm::vec3 leftCheck = position + perpendicular * effectiveRadius;
+                    glm::vec3 rightCheck = position - perpendicular * effectiveRadius;
+
+                    float leftClearance = glm::length(otherMob->position - leftCheck);
+                    float rightClearance = glm::length(otherMob->position - rightCheck);
+
+                    if (rightClearance > leftClearance) {
+                        perpendicular = -perpendicular;
+                    }
+
+                    // Stronger avoidance for closer obstacles
+                    float avoidanceStrength = 1.0f - (currentDist / avoidanceRadius);
+                    avoidanceStrength = glm::clamp(avoidanceStrength, 0.0f, 1.0f);
+
+                    // Combine perpendicular steering with slight push away
+                    avoidanceForce += (perpendicular * 0.8f - toObstacle * 0.2f) * avoidanceStrength;
+                }
             }
         }
     }
 
-    // Combine forces (avoidance gets higher priority when close to obstacles)
-    glm::vec3 combinedForce = seekForce + avoidanceForce * 2.0f;
+    // Combine forces with dynamic weighting
+    glm::vec3 combinedForce;
+    if (needsAvoidance) {
+        // When avoiding, reduce seek force and increase avoidance
+        float avoidanceWeight = glm::clamp(glm::length(avoidanceForce), 0.0f, 3.0f);
+        combinedForce = seekForce * 0.3f + avoidanceForce * avoidanceWeight;
+    } else {
+        // No obstacles, full speed toward target
+        combinedForce = seekForce;
+    }
 
     if (glm::length(combinedForce) > 0.01f) {
         return glm::normalize(combinedForce);
@@ -144,18 +254,26 @@ void BasicShooterEnemy::update(float deltaTime) {
         if (closestPC) {
             glm::vec3 targetPos = closestPC->position;
 
-            // Stop when we're close enough (our radius + their radius + small gap)
-            float stopDistance = radius + closestPC->radius + 0.2f;
-            if (closestDistance > stopDistance) {
-                // Calculate steering direction with obstacle avoidance
-                glm::vec3 steeringDir = calculateSteeringForce(targetPos, 3.0f);
+            // Desired engagement distance (stop a bit away from the player)
+            float desiredDistance = radius + closestPC->radius + 1.0f; // Keep some combat distance
 
-                // Move in the steering direction
+            if (closestDistance > desiredDistance) {
+                // Calculate steering direction with dynamic avoidance radius
+                float avoidanceRadius = glm::max(3.0f, movementSpeed * 0.8f); // Scale with speed
+                glm::vec3 steeringDir = calculateSteeringForce(targetPos, avoidanceRadius);
+
+                // Smoother movement using steering direction
                 glm::vec3 nextPos = position + steeringDir * movementSpeed * deltaTime;
                 moveTo(nextPos);
+            } else if (closestDistance < desiredDistance * 0.7f) {
+                // Too close, back away slightly
+                glm::vec3 awayDir = glm::normalize(position - targetPos);
+                glm::vec3 backPos = position + awayDir * movementSpeed * 0.5f * deltaTime;
+                moveTo(backPos);
             } else {
-                // We're close enough, stop moving
+                // We're at a good distance, stop moving but face the target
                 stop();
+                // Could add rotation to face target here if needed
             }
         }
     }

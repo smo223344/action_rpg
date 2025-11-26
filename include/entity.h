@@ -55,6 +55,12 @@ struct MobEntity : public Entity {
 
     // Steering behavior for obstacle avoidance
     glm::vec3 calculateSteeringForce(const glm::vec3& targetPos, float avoidanceRadius);
+
+    // Collision resolution with sliding
+    glm::vec3 resolveCollisions(const glm::vec3& desiredPosition, float deltaTime);
+
+    // Apply separation forces to prevent overlapping
+    void applySeparationForces(float deltaTime);
 };
 
 // Player-controlled entity
